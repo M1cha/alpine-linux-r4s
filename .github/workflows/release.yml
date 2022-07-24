@@ -1,0 +1,32 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Update repos
+      run: SHALLOW=yes bash -x ./update_repos
+
+    - name: Build
+      run: make -j$(($(nproc) * 2)) rootfs
+
+    - name: Publish Artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: rootfs
+        path: output/rootfs.tar.gz
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: output/rootfs.tar.gz
+        body: "automatically generated release"

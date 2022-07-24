@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -euo pipefail
+
+shallow="${SHALLOW:-no}"
+
+linux_branch="linux-5.15.y"
+zfs_branch="zfs-2.1-release"
+
+script=$(readlink -f "$0")
+scriptdir=$(dirname "$script")
+repos="$scriptdir/repos"
+
+linux_dir="$repos/linux"
+zfs_dir="$repos/zfs"
+
+mkdir -p "$repos"
+
+clone_or_fetch() {
+	local url="$1"
+	local branch="$2"
+	local dir="$3"
+
+	local shallow_arg=""
+	if [ "$shallow" == "yes" ]; then
+		shallow_arg="--depth=1"
+	fi
+
+	if [ ! -e "$dir" ]; then
+		git clone "$shallow_arg" "$url" -b "$branch" "$dir"
+	else
+		git -C "$dir" fetch origin "$branch"
+		git -C "$dir" checkout FETCH_HEAD
+	fi
+
+}
+
+clone_or_fetch "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git" "$linux_branch" "$linux_dir"
+clone_or_fetch "https://github.com/openzfs/zfs.git" "$zfs_branch" "$zfs_dir"
